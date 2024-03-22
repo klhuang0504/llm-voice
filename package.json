@@ -18,11 +18,11 @@
     "node": ">=18"
   },
   "packageManager": "bun@1.0.33",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "dependencies": {
-    "lefthook": "^1.6.7"
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.11",
+    "lefthook": "^1.6.7",
+    "typescript": "^5.4.3"
   }
 }
