@@ -104,9 +104,7 @@ const Recorder: FC<RecorderProps> = () => {
           <Text style={{ fontSize: 20 }}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
         </TouchableOpacity>
       )}
-      <button type="button" id="transcription" onClick={speakTranscription} aria-label="Transcription">
-        Click to hear transcription
-      </button>
+      <div id="transcription" onClick={speakTranscription} />
     </View>
   )
 }

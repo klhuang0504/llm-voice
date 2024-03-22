@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Picker } from '@react-native-picker/picker'
 import axios from 'axios'
-import { speak } from 'expo-speech'
 import type React from 'react'
 import { useState } from 'react'
 import { Button, StyleSheet, TextInput, View } from 'react-native'
@@ -26,9 +25,24 @@ const FormScreen: React.FC = () => {
 
   const handlePlayText = async (text: string, gender: string) => {
     try {
-      await speak(text, {
-        language: 'en',
-        voice: gender === 'Male' ? 'com.apple.ttsbundle.Moira-compact' : 'com.apple.ttsbundle.Samantha-compact',
+      const response = await axios.post(
+        'http://localhost:3000/convertToSpeech',
+        {
+          texts: { voice: gender, text: text },
+        },
+        {
+          responseType: 'blob',
+        },
+      )
+
+      const blob = new Blob([response.data], { type: 'audio/mpeg' })
+      const url = URL.createObjectURL(blob)
+
+      const audio = new Audio(url)
+      audio.play()
+
+      await new Promise((resolve) => {
+        audio.onended = resolve
       })
     } catch (error) {
       console.error('Error speaking text:', error)

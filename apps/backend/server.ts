@@ -1,4 +1,3 @@
-// import type { Express } from "@sentry/node/types/tracing/integrations";
 import type { Request, Response } from 'express'
 
 const express = require('express')
