@@ -11,7 +11,7 @@ interface FormData {
 }
 
 const FormScreen: React.FC = () => {
-  const [formData, setFormData] = useState<FormData[]>([{ voice: 'alloy', text: '123' }])
+  const [formData, setFormData] = useState<FormData[]>([{ voice: 'alloy', text: 'Hello' }])
 
   const handleInputChange = (text: string, index: number) => {
     const updatedFormData = [...formData]
@@ -20,15 +20,15 @@ const FormScreen: React.FC = () => {
   }
 
   const handleAddField = () => {
-    setFormData([...formData, { voice: 'Male', text: '' }])
+    setFormData([...formData, { voice: 'alloy', text: '' }])
   }
 
-  const handlePlayText = async (text: string, gender: string) => {
+  const handlePlayText = async (text: string, voice: string) => {
     try {
       const response = await axios.post(
         'http://localhost:3000/convertToSpeech',
         {
-          texts: { voice: gender, text: text },
+          data: { voice: voice, text: text },
         },
         {
           responseType: 'blob',
@@ -56,7 +56,7 @@ const FormScreen: React.FC = () => {
         const response = await axios.post(
           'http://localhost:3000/convertToSpeech',
           {
-            texts: formData[i],
+            data: formData[i],
           },
           {
             responseType: 'blob',
@@ -79,13 +79,13 @@ const FormScreen: React.FC = () => {
   }
 
   const handleReset = () => {
-    setFormData([{ voice: 'Male', text: '' }])
+    setFormData([{ voice: 'alloy', text: 'Hello' }])
   }
 
   return (
     <View style={styles.container}>
       {formData.map((data, index) => (
-        <View key={`${data.voice}-${data.text}-${index}`} style={styles.row}>
+        <View key={`${data.voice}-${index}`} style={styles.row}>
           <Ionicons
             name="play"
             size={24}
@@ -109,12 +109,7 @@ const FormScreen: React.FC = () => {
             <Picker.Item label="Nova" value="nova" />
             <Picker.Item label="Shimmer" value="shimmer" />
           </Picker>
-          <TextInput
-            style={styles.input}
-            value={data.text}
-            onChangeText={(text) => handleInputChange(text, index)}
-            multiline
-          />
+          <TextInput style={styles.input} value={data.text} onChangeText={(text) => handleInputChange(text, index)} />
         </View>
       ))}
       <View style={styles.buttonContainer}>
@@ -150,11 +145,13 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: 100,
+    height: 20,
     marginRight: 10,
   },
   input: {
     flex: 5, // Adjust the flex value to make the TextInput wider
-    height: 40,
+    height: 20,
+    width: 300,
     borderColor: 'gray',
     borderWidth: 1,
     paddingHorizontal: 10,

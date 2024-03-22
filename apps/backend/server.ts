@@ -74,16 +74,16 @@ app.post('/upload', upload.single('audio'), async (_req: Request, res: Response)
 // Endpoint to handle text upload and convert to speech
 app.post('/convertToSpeech', async (_req: Request, res: Response) => {
   try {
-    const { texts } = _req.body
-    console.log(texts)
+    const { data } = _req.body
+    console.log(data)
 
     // Check if texts are provided
-    if (!texts) {
+    if (!data) {
       return res.status(400).json({ error: 'Texts array is required' })
     }
 
     const mp3s = await Promise.all(
-      [texts].map(async ({ text, voice }) => {
+      [data].map(async ({ text, voice }) => {
         console.log(text)
         console.log(voice)
 
