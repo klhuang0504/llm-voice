@@ -3,12 +3,14 @@ import { Picker } from '@react-native-picker/picker'
 import axios from 'axios'
 import type React from 'react'
 import { useState } from 'react'
-import { Button, StyleSheet, TextInput, View } from 'react-native'
+import { Button, Pressable, StyleSheet, TextInput, View } from 'react-native'
 
 interface FormData {
   voice: string
   text: string
 }
+
+const hostname = 'localhost'
 
 const FormScreen: React.FC = () => {
   const [formData, setFormData] = useState<FormData[]>([{ voice: 'alloy', text: 'Hello' }])
@@ -26,7 +28,7 @@ const FormScreen: React.FC = () => {
   const handlePlayText = async (text: string, voice: string) => {
     try {
       const response = await axios.post(
-        'http://localhost:3000/convertToSpeech',
+        `http://${hostname}:3000/convertToSpeech`,
         {
           data: { voice: voice, text: text },
         },
@@ -54,7 +56,7 @@ const FormScreen: React.FC = () => {
     try {
       for (let i = 0; i < formData.length; i++) {
         const response = await axios.post(
-          'http://localhost:3000/convertToSpeech',
+          `http://${hostname}:3000/convertToSpeech`,
           {
             data: formData[i],
           },

@@ -5,14 +5,12 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 
 type RecorderProps = Record<string, never>
 
-// interface RecordingState {
-//   recording: Audio.Recording | null
-//   loading: boolean
-// }
+const hostname = 'localhost'
 
 const Recorder: FC<RecorderProps> = () => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
+  const [transcription, setTranscription] = useState<string>('')
 
   const startRecording = async (): Promise<void> => {
     try {
@@ -52,13 +50,14 @@ const Recorder: FC<RecorderProps> = () => {
     setLoading(true) // Set loading state to true while waiting for response
 
     try {
+      console.log('TEST')
       const response = await fetch(uri)
       const blob = await response.blob()
 
       const formData = new FormData()
       formData.append('audio', blob, 'recorded_audio.mp3')
 
-      const uploadResponse = await fetch('http://localhost:3000/upload', {
+      const uploadResponse = await fetch(`http://${hostname}:3000/upload`, {
         method: 'POST',
         body: formData,
       })
@@ -67,6 +66,7 @@ const Recorder: FC<RecorderProps> = () => {
       const data = await uploadResponse.json()
       console.log('Server response:', data)
 
+      setTranscription(data.transcription)
       speak(data.transcription) // Replace with your transcribed text
 
       showTranscription(data.transcription)
@@ -104,7 +104,7 @@ const Recorder: FC<RecorderProps> = () => {
           <Text style={{ fontSize: 20 }}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
         </TouchableOpacity>
       )}
-      <div id="transcription" onClick={speakTranscription} />
+      <Text id="transcription">{transcription || 'Say something first to get a transcription!'}</Text>
     </View>
   )
 }

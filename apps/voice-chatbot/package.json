@@ -25,7 +25,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@expo/ngrok": "^2.5.0",
     "@types/react": "~18.2.45",
+    "expo-dev-client": "~3.3.11",
     "typescript": "^5.1.3"
   },
   "private": true

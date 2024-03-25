@@ -1,22 +1,24 @@
+import { exec } from 'node:child_process'
+import path from 'node:path'
+import bodyParser from 'body-parser'
+import cors from 'cors'
 import type { Request, Response } from 'express'
-
-const express = require('express')
-const cors = require('cors')
-const multer = require('multer')
-const { exec } = require('node:child_process')
-const path = require('node:path')
-const bodyParser = require('body-parser')
-const OpenAI = require('openai')
+import express from 'express'
+import multer, { type FileFilterCallback } from 'multer'
+import OpenAI from 'openai'
 
 const app = express()
+const hostname = 'localhost'
 const port = 3000
 let fileName = ''
 let fieldname = ''
 
-const openai = new OpenAI(process.env.OPENAI_API_KEY) // Replace with your OpenAI API key
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) // Replace with your OpenAI API key
+
 // Middleware to parse JSON bodies
 app.use(bodyParser.json())
-app.use(cors({ origin: 'http://localhost:8081' })) // Adjust origin as needed
+// app.use(cors({ origin: hostname })) // Adjust origin as needed
+app.use(cors({ origin: `http://${hostname}:8081` })) // Adjust origin as needed
 
 const storage = multer.diskStorage({
   destination: (_req: Express.Request, _file: Express.Multer.File, cb: (arg0: null, arg1: string) => void) => {
@@ -25,49 +27,43 @@ const storage = multer.diskStorage({
   filename: (
     _req: Express.Request,
     file: { fieldname: string; originalname: string },
-    cb: (arg0: null, arg1: string) => void,
+    callback: (arg0: null, arg1: string) => void,
   ) => {
     fieldname = `${file.fieldname}-${Date.now()}`
     fileName = fieldname + path.extname(file.originalname)
-    cb(null, fileName) // Use the original file name
+    callback(null, fileName) // Use the original file name
   },
 })
 
-const fileFilter = (
-  _req: Express.Request,
-  file: Express.Multer.File,
-  cb: (arg0: Error | null, arg1: boolean) => void,
-) => {
+const fileFilter = (_req: Express.Request, file: Express.Multer.File, callback: FileFilterCallback): void => {
   if (file.mimetype.startsWith('audio/')) {
-    cb(null, true)
+    callback(null, true)
   } else {
-    cb(new Error('Not an audio file!'), false)
+    callback(new Error('Not an audio file!'))
   }
 }
 
 const upload = multer({ storage: storage, fileFilter: fileFilter })
 
 app.post('/upload', upload.single('audio'), async (_req: Request, res: Response) => {
+  console.log('=====/updload start=====')
   const command = `whisper ./${fileName} --model small`
 
-  exec(command, (error: { message: string }, _stdout: string, _stderr: string) => {
+  exec(command, (error, stdout, stderr) => {
     if (error) {
-      console.error('Error executing whisper command:', error)
-      return res.status(500).send(`Error processing audio${error.message}`)
+      console.error('Error executing whisper command:', stderr)
+      return res.status(500).send(`Error processing audio: ${error.message}`)
     }
 
-    exec(
-      `cat ./${fieldname}.txt && rm ${fieldname}*`,
-      (error: { message: string }, stdout: string, _stderr: string) => {
-        if (error) {
-          console.error('Error executing cat command:', error)
-          return res.status(500).send(`Error retrieving transcription${error.message}`)
-        }
+    exec(`cat ./${fieldname}.txt && rm ${fieldname}*`, (error, stdout, _stderr) => {
+      if (error) {
+        console.error('Error executing cat command:', error)
+        return res.status(500).send(`Error retrieving transcription: ${error.message}`)
+      }
 
-        console.log('Transcription result:', stdout)
-        res.status(200).json({ transcription: stdout })
-      },
-    )
+      console.log('Transcription result:', stdout)
+      res.status(200).json({ transcription: stdout })
+    })
   })
 })
 
@@ -84,9 +80,6 @@ app.post('/convertToSpeech', async (_req: Request, res: Response) => {
 
     const mp3s = await Promise.all(
       [data].map(async ({ text, voice }) => {
-        console.log(text)
-        console.log(voice)
-
         const mp3 = await openai.audio.speech.create({
           model: 'tts-1',
           voice,
@@ -107,6 +100,6 @@ app.post('/convertToSpeech', async (_req: Request, res: Response) => {
   }
 })
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`)
+app.listen(port, hostname, () => {
+  console.log(`Server is running on http://${hostname}:${port}`)
 })
