@@ -10,7 +10,7 @@ interface FormData {
   text: string
 }
 
-const hostname = 'localhost'
+const hostname = '127.0.0.1'
 
 const FormScreen: React.FC = () => {
   const [formData, setFormData] = useState<FormData[]>([{ voice: 'alloy', text: 'Hello' }])

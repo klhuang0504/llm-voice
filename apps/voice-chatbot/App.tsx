@@ -1,8 +1,10 @@
 import { createStackNavigator } from '@react-navigation/stack'
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import { enableLegacyWebImplementation } from 'react-native-gesture-handler'
 import FormScreen from './FormScreen'
 import Recorder from './Recorder'
+enableLegacyWebImplementation(true)
 
 const Stack = createStackNavigator()
 

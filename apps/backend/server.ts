@@ -1,5 +1,5 @@
 import { exec } from 'node:child_process'
-import path from 'node:path'
+import fs from 'node:fs'
 import bodyParser from 'body-parser'
 import cors from 'cors'
 import type { Request, Response } from 'express'
@@ -8,30 +8,24 @@ import multer, { type FileFilterCallback } from 'multer'
 import OpenAI from 'openai'
 
 const app = express()
-const hostname = 'localhost'
+const hostname = '127.0.0.1'
 const port = 3000
-let fileName = ''
-let fieldname = ''
+const fieldname = 'uploaded_audio'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) // Replace with your OpenAI API key
 
 // Middleware to parse JSON bodies
 app.use(bodyParser.json())
-// app.use(cors({ origin: hostname })) // Adjust origin as needed
 app.use(cors({ origin: `http://${hostname}:8081` })) // Adjust origin as needed
 
+// Multer configuration for disk storage
 const storage = multer.diskStorage({
-  destination: (_req: Express.Request, _file: Express.Multer.File, cb: (arg0: null, arg1: string) => void) => {
+  destination: (_req, file, cb) => {
     cb(null, __dirname) // Change the audio store folder to the current path
   },
-  filename: (
-    _req: Express.Request,
-    file: { fieldname: string; originalname: string },
-    callback: (arg0: null, arg1: string) => void,
-  ) => {
-    fieldname = `${file.fieldname}-${Date.now()}`
-    fileName = fieldname + path.extname(file.originalname)
-    callback(null, fileName) // Use the original file name
+  filename: (_req, file, cb) => {
+    // callback(null, file.originalname)
+    cb(null, `${fieldname}.mp3`)
   },
 })
 
@@ -43,28 +37,59 @@ const fileFilter = (_req: Express.Request, file: Express.Multer.File, callback: 
   }
 }
 
-const upload = multer({ storage: storage, fileFilter: fileFilter })
-
+const upload = multer({ storage: storage })
+// const upload = multer({ dest: 'uploads/' })
 app.post('/upload', upload.single('audio'), async (_req: Request, res: Response) => {
-  console.log('=====/updload start=====')
-  const command = `whisper ./${fileName} --model small`
-
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error('Error executing whisper command:', stderr)
-      return res.status(500).send(`Error processing audio: ${error.message}`)
-    }
-
-    exec(`cat ./${fieldname}.txt && rm ${fieldname}*`, (error, stdout, _stderr) => {
+  if (_req.body.Platform === 'web') {
+    const command = `whisper ${fieldname}.mp3 --model small`
+    exec(command, (error, stdout, stderr) => {
       if (error) {
-        console.error('Error executing cat command:', error)
-        return res.status(500).send(`Error retrieving transcription: ${error.message}`)
+        console.error('Error executing whisper command:', stderr)
+        return res.status(500).send(`Error processing audio: ${error.message}`)
       }
+      exec(`cat ./${fieldname}.txt && rm ${fieldname}*`, (error, stdout, _stderr) => {
+        if (error) {
+          console.error('Error executing cat command:', error)
+          return res.status(500).send(`Error retrieving transcription: ${error.message}`)
+        }
 
-      console.log('Transcription result:', stdout)
-      res.status(200).json({ transcription: stdout })
+        console.log('Transcription result:', stdout)
+        return res.status(200).json({ transcription: stdout })
+      })
     })
-  })
+  } else {
+    const { audioData } = _req.body
+    // Decode the Base64 audio data
+    const audioBuffer = Buffer.from(audioData, 'base64')
+
+    // Write the audio data to a file on the server
+
+    fs.writeFile(`${fieldname}.mp3`, audioBuffer, 'base64', (error: NodeJS.ErrnoException | null) => {
+      if (error) {
+        console.error('Error saving audio file:', error)
+        res.status(500).json({ error: 'Failed to save audio file' })
+      } else {
+        console.log('Audio file saved successfully')
+        const command = `whisper ${fieldname}.mp3 --model small`
+        exec(command, (error, stdout, stderr) => {
+          if (error) {
+            console.error('Error executing whisper command:', stderr)
+            return res.status(500).send(`Error processing audio: ${error.message}`)
+          }
+          exec(`cat ./${fieldname}.txt && rm ${fieldname}*`, (error, stdout, _stderr) => {
+            if (error) {
+              console.error('Error executing cat command:', error)
+              return res.status(500).send(`Error retrieving transcription: ${error.message}`)
+            }
+
+            console.log('Transcription result:', stdout)
+            res.status(200).json({ transcription: stdout })
+          })
+        })
+        // res.status(200).json({ message: 'Audio file uploaded and saved' })
+      }
+    })
+  }
 })
 
 // Endpoint to handle text upload and convert to speech
