@@ -83,19 +83,20 @@ const handleAudio = (filePath: string, res: Response) => {
   })
 }
 
-// Endpoint to handle text upload and convert to speech
 app.post('/convertToSpeech', async (_req: Request, res: Response) => {
   try {
     const { data } = _req.body
-    console.log(data)
 
-    // Check if texts are provided
+    // Check if data is provided
     if (!data) {
-      return res.status(400).json({ error: 'Texts array is required' })
+      return res.status(400).json({ error: 'Data is required' })
     }
 
+    // Handle both single and multiple text entries
+    const texts = Array.isArray(data) ? data : [data]
+
     const mp3s = await Promise.all(
-      [data].map(async ({ text, voice }) => {
+      texts.map(async ({ text, voice }) => {
         const mp3 = await openai.audio.speech.create({
           model: 'tts-1',
           voice,

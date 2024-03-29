@@ -27,70 +27,33 @@ const FormScreen: React.FC = () => {
     setFormData([...formData, { voice: 'alloy', text: '' }])
   }
 
-  const handlePlayText = async (text: string, voice: string) => {
+  const playAudio = async (texts: FormData[]) => {
     try {
-      const response = await axios.post(
-        `http://${hostname}:3000/convertToSpeech`,
-        {
-          data: { voice: voice, text: text },
-        },
-        {
-          responseType: Platform.OS === 'web' ? 'blob' : 'arraybuffer',
-        },
-      )
+      for (const { text, voice } of texts) {
+        const response = await axios.post(
+          `http://${hostname}:3000/convertToSpeech`,
+          { data: { voice, text } },
+          { responseType: Platform.OS === 'web' ? 'blob' : 'arraybuffer' },
+        )
 
-      if (Platform.OS === 'web') {
-        try {
-          const blob = new Blob([response.data], { type: 'audio/mpeg' })
-          const url = URL.createObjectURL(blob)
-          const { sound } = await Audio.Sound.createAsync({ uri: url })
-          await sound.playAsync()
-        } catch (error) {
-          console.error('Error playing sound:', error)
-        }
-      } else {
-        const soundObject = new Audio.Sound()
-        const base64Audio = base64.fromByteArray(new Uint8Array(response.data))
-        await soundObject.loadAsync({ uri: `data:audio/mpeg;base64,${base64Audio}` })
-        await soundObject.playAsync()
+        const audioData = Platform.OS === 'web' ? response.data : base64.fromByteArray(new Uint8Array(response.data))
+        const audioUri =
+          Platform.OS === 'web' ? URL.createObjectURL(new Blob([audioData])) : `data:audio/mpeg;base64,${audioData}`
+        const { sound } = await Audio.Sound.createAsync({ uri: audioUri })
+        await sound.playAsync()
+        // If you want to wait for the sound to finish before continuing, uncomment the next line
+        await new Promise((resolve) => sound.setOnPlaybackStatusUpdate((status) => status.didJustFinish && resolve()))
       }
     } catch (error) {
-      console.error('Error speaking text:', error)
+      console.error('Error playing text:', error)
     }
   }
 
+  const handlePlayText = async (text: string, voice: string) => {
+    await playAudio([{ voice, text }])
+  }
   const handlePlayAll = async () => {
-    try {
-      for (let i = 0; i < formData.length; i++) {
-        const response = await axios.post(
-          `http://${hostname}:3000/convertToSpeech`,
-          {
-            data: formData[i],
-          },
-          {
-            responseType: Platform.OS === 'web' ? 'blob' : 'arraybuffer',
-          },
-        )
-
-        if (Platform.OS === 'web') {
-          try {
-            const blob = new Blob([response.data], { type: 'audio/mpeg' })
-            const url = URL.createObjectURL(blob)
-            const { sound } = await Audio.Sound.createAsync({ uri: url })
-            await sound.playAsync()
-          } catch (error) {
-            console.error('Error playing sound:', error)
-          }
-        } else {
-          const soundObject = new Audio.Sound()
-          const base64Audio = base64.fromByteArray(new Uint8Array(response.data))
-          await soundObject.loadAsync({ uri: `data:audio/mpeg;base64,${base64Audio}` })
-          await soundObject.playAsync()
-        }
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    }
+    await playAudio(formData)
   }
 
   const handleReset = () => {
