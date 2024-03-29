@@ -1,10 +1,11 @@
 import { exec } from 'node:child_process'
 import fs from 'node:fs'
+import path from 'node:path'
 import bodyParser from 'body-parser'
 import cors from 'cors'
 import type { Request, Response } from 'express'
 import express from 'express'
-import multer, { type FileFilterCallback } from 'multer'
+import multer from 'multer'
 import OpenAI from 'openai'
 
 const app = express()
@@ -24,64 +25,63 @@ const storage = multer.diskStorage({
     cb(null, __dirname) // Change the audio store folder to the current path
   },
   filename: (_req, file, cb) => {
-    // callback(null, file.originalname)
     cb(null, `${fieldname}.mp3`)
   },
 })
 
 const upload = multer({ storage: storage })
-// const upload = multer({ dest: 'uploads/' })
 app.post('/upload', upload.single('audio'), async (_req: Request, res: Response) => {
-  if (_req.body.Platform === 'web') {
-    const command = `whisper ${fieldname}.mp3 --model small`
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error('Error executing whisper command:', stderr)
-        return res.status(500).send(`Error processing audio: ${error.message}`)
-      }
-      exec(`cat ./${fieldname}.txt && rm ${fieldname}*`, (error, stdout, _stderr) => {
-        if (error) {
-          console.error('Error executing cat command:', error)
-          return res.status(500).send(`Error retrieving transcription: ${error.message}`)
-        }
+  const filePath = path.join(__dirname, `${fieldname}`)
 
-        console.log('Transcription result:', stdout)
-        return res.status(200).json({ transcription: stdout })
-      })
-    })
+  if (_req.body.Platform === 'web') {
+    handleAudio(filePath, res)
   } else {
     const { audioData } = _req.body
-    // Decode the Base64 audio data
+    // Decode the Base64 audio data and write to a file
     const audioBuffer = Buffer.from(audioData, 'base64')
-
-    // Write the audio data to a file on the server
-
-    fs.writeFile(`${fieldname}.mp3`, audioBuffer, 'base64', (error: NodeJS.ErrnoException | null) => {
-      if (error) {
-        console.error('Error saving audio file:', error)
-        res.status(500).json({ error: 'Failed to save audio file' })
-      } else {
-        console.log('Audio file saved successfully')
-        const command = `whisper ${fieldname}.mp3 --model small`
-        exec(command, (error, stdout, stderr) => {
-          if (error) {
-            console.error('Error executing whisper command:', stderr)
-            return res.status(500).send(`Error processing audio: ${error.message}`)
-          }
-          exec(`cat ./${fieldname}.txt && rm ${fieldname}*`, (error, stdout, _stderr) => {
-            if (error) {
-              console.error('Error executing cat command:', error)
-              return res.status(500).send(`Error retrieving transcription: ${error.message}`)
-            }
-
-            console.log('Transcription result:', stdout)
-            res.status(200).json({ transcription: stdout })
-          })
-        })
+    fs.writeFile(`${fieldname}.mp3`, audioBuffer, 'base64', (writeError: NodeJS.ErrnoException | null) => {
+      if (writeError) {
+        console.error('Error saving audio file:', writeError)
+        return res.status(500).json({ error: 'Failed to save audio file' })
       }
+      console.log('Audio file saved successfully')
+      handleAudio(filePath, res)
     })
   }
 })
+
+const handleAudio = (filePath: string, res: Response) => {
+  const command = `whisper ${filePath}.mp3 --model small --output_format txt`
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error executing whisper command:', stderr)
+      return res.status(500).send(`Error processing audio: ${error.message}`)
+    }
+    const audioFilePath = `${filePath}.mp3`
+    const textFilePath = `${filePath}.txt`
+
+    // Read the transcription from the text file
+    fs.readFile(textFilePath, 'utf8', (readError, data) => {
+      if (readError) {
+        console.error('Error reading transcription file:', readError)
+        return res.status(500).send(`Error retrieving transcription: ${readError.message}`)
+      }
+
+      console.log('Transcription result:', data)
+
+      // Send the transcription in the response
+      res.status(200).json({ transcription: data })
+
+      // Cleanup: Delete the audio and text files
+      fs.unlink(audioFilePath, (unlinkError) => {
+        if (unlinkError) console.error('Error deleting audio file:', unlinkError)
+      })
+      fs.unlink(textFilePath, (unlinkError) => {
+        if (unlinkError) console.error('Error deleting text file:', unlinkError)
+      })
+    })
+  })
+}
 
 // Endpoint to handle text upload and convert to speech
 app.post('/convertToSpeech', async (_req: Request, res: Response) => {
