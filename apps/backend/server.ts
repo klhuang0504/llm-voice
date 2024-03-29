@@ -29,14 +29,6 @@ const storage = multer.diskStorage({
   },
 })
 
-const fileFilter = (_req: Express.Request, file: Express.Multer.File, callback: FileFilterCallback): void => {
-  if (file.mimetype.startsWith('audio/')) {
-    callback(null, true)
-  } else {
-    callback(new Error('Not an audio file!'))
-  }
-}
-
 const upload = multer({ storage: storage })
 // const upload = multer({ dest: 'uploads/' })
 app.post('/upload', upload.single('audio'), async (_req: Request, res: Response) => {

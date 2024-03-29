@@ -3,11 +3,8 @@ import * as FileSystem from 'expo-file-system'
 import { speak } from 'expo-speech' // Import the speak function from expo-speech
 import React, { useState, useRef, type FC } from 'react'
 import { ActivityIndicator, Platform, Text, TouchableOpacity, View } from 'react-native'
-// import 'react-native-gesture-handler'
 
-// import base64 from 'react-native-base64'
 type RecorderProps = Record<string, never>
-
 const hostname = '127.0.0.1'
 
 const Recorder: FC<RecorderProps> = () => {
@@ -81,12 +78,9 @@ const Recorder: FC<RecorderProps> = () => {
         uploadResponse = await fetch(`http://${hostname}:3000/upload`, {
           method: 'POST',
           body: formData,
-          // headers: { 'Content-Type': 'multipart/form-data' }, // This is usually not needed
         })
       } else {
         const audioData = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
-
-        // Make a POST request to your Node.js backend
 
         uploadResponse = await fetch(`http://${hostname}:3000/upload`, {
           method: 'POST',

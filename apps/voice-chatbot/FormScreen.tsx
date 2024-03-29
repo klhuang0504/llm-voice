@@ -1,13 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
-// import { Picker } from '@react-native-picker/picker'
 import axios from 'axios'
 import base64 from 'base64-js'
 import { Audio } from 'expo-av'
 import { useState } from 'react'
 import React from 'react'
-import { Button, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native'
+import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import RNPickerSelect from 'react-native-picker-select'
-// import 'react-native-gesture-handler'
 
 interface FormData {
   voice: string
@@ -101,6 +99,21 @@ const FormScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={handleAddField}>
+          <Ionicons name="add-circle-outline" size={24} color="black" />
+          <Text style={styles.buttonText}>Add</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handlePlayAll}>
+          <Ionicons name="play-circle-outline" size={24} color="black" />
+          <Text style={styles.buttonText}>Play all</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleReset}>
+          <Ionicons name="refresh-circle-outline" size={24} color="black" />
+          <Text style={styles.buttonText}>Reset</Text>
+        </TouchableOpacity>
+      </View>
+
       {formData.map((data, index) => (
         <View key={`${data.voice}-${index}`} style={styles.row}>
           <Ionicons
@@ -131,17 +144,6 @@ const FormScreen: React.FC = () => {
           <TextInput style={styles.input} value={data.text} onChangeText={(text) => handleInputChange(text, index)} />
         </View>
       ))}
-      <View style={styles.buttonContainer}>
-        <View style={styles.button}>
-          <Button title="Add" onPress={handleAddField} />
-        </View>
-        <View style={styles.button}>
-          <Button title="Play all" onPress={handlePlayAll} />
-        </View>
-        <View style={styles.button}>
-          <Button title="Reset" onPress={handleReset} />
-        </View>
-      </View>
     </View>
   )
 }
@@ -175,9 +177,6 @@ const pickerSelectStyles = StyleSheet.create({
     borderColor: 'gray',
     borderRadius: 4,
     color: 'black',
-    // outline: 'none', // this removes the default browser input outline
-    // appearance: 'none', // this removes the default browser input styling
-    // Add any additional styling you want for the web version here
   },
 })
 const styles = StyleSheet.create({
@@ -189,22 +188,15 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 10,
     justifyContent: 'flex-start', // Align items to the left
   },
   playIcon: {
     marginRight: 10,
   },
-  // picker: {
-  //   width: 100,
-  //   height: 20,
-  //   marginRight: 10,
-  // },
   input: {
     flex: 1, // Adjust the flex value to make the TextInput wider
-    // height: 20,
-    // width: 300,
     fontSize: 16,
     paddingVertical: 0,
     paddingHorizontal: 10,
@@ -212,6 +204,7 @@ const styles = StyleSheet.create({
     borderColor: 'gray',
     borderRadius: 4,
     paddingRight: 30,
+    marginLeft: 10,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -219,9 +212,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: '100%',
     paddingHorizontal: 20,
+    marginBottom: 20,
   },
   button: {
-    marginRight: 10, // Add margin between buttons
+    // marginRight: 10, // Add margin between buttons
+    flexDirection: 'row', // Align items horizontally
+    alignItems: 'center', // Center items vertically
+    padding: 10, // Add padding for touchable area
+  },
+  buttonText: {
+    marginLeft: 8, // Add space between the icon and text
+    // ... other styles for button text ...
   },
 })
 
