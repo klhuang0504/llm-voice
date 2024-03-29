@@ -3,6 +3,8 @@ import * as FileSystem from 'expo-file-system'
 import { speak } from 'expo-speech' // Import the speak function from expo-speech
 import React, { useState, useRef, type FC } from 'react'
 import { ActivityIndicator, Platform, Text, TouchableOpacity, View } from 'react-native'
+// import 'react-native-gesture-handler'
+
 // import base64 from 'react-native-base64'
 type RecorderProps = Record<string, never>
 

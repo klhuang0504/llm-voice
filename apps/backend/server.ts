@@ -86,7 +86,6 @@ app.post('/upload', upload.single('audio'), async (_req: Request, res: Response)
             res.status(200).json({ transcription: stdout })
           })
         })
-        // res.status(200).json({ message: 'Audio file uploaded and saved' })
       }
     })
   }
