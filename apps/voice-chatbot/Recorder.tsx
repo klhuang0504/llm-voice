@@ -1,11 +1,12 @@
 import { Audio } from 'expo-av'
 import * as FileSystem from 'expo-file-system'
 import { speak } from 'expo-speech' // Import the speak function from expo-speech
-import React, { useState, useRef, type FC } from 'react'
+import React, { useState, type FC } from 'react'
 import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { config } from './config/config.ts'
 
 type RecorderProps = Record<string, never>
-const hostname = '127.0.0.1'
+const hostname = config.hostname
 
 const Recorder: FC<RecorderProps> = () => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null)

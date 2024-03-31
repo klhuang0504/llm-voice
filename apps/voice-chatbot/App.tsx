@@ -14,14 +14,21 @@ export default function App() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
-            let iconName = ''
+            const iconName = ''
 
             if (route.name === 'Audio To Text') {
-              iconName = focused ? 'recording-sharp' : 'recording-outline'
+              return focused ? (
+                <Ionicons name="recording-sharp" size={size} color={color} />
+              ) : (
+                <Ionicons name="recording-outline" size={size} color={color} />
+              )
             } else if (route.name === 'Text To Audio') {
-              iconName = focused ? 'text-sharp' : 'text-outline'
+              return focused ? (
+                <Ionicons name="text-sharp" size={size} color={color} />
+              ) : (
+                <Ionicons name="text-outline" size={size} color={color} />
+              )
             }
-            return <Ionicons name={iconName} size={size} color={color} />
           },
           tabBarActiveTintColor: 'tomato',
           tabBarInactiveTintColor: 'gray',

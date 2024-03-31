@@ -6,13 +6,14 @@ import { useState } from 'react'
 import React from 'react'
 import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import RNPickerSelect from 'react-native-picker-select'
+import { config } from './config/config.ts'
 
 interface FormData {
   voice: string
   text: string
 }
 
-const hostname = '127.0.0.1'
+const hostname = config.hostname
 
 const FormScreen: React.FC = () => {
   const [formData, setFormData] = useState<FormData[]>([{ voice: 'alloy', text: 'Hello' }])
@@ -41,8 +42,13 @@ const FormScreen: React.FC = () => {
           Platform.OS === 'web' ? URL.createObjectURL(new Blob([audioData])) : `data:audio/mpeg;base64,${audioData}`
         const { sound } = await Audio.Sound.createAsync({ uri: audioUri })
         await sound.playAsync()
-        // If you want to wait for the sound to finish before continuing, uncomment the next line
-        await new Promise((resolve) => sound.setOnPlaybackStatusUpdate((status) => status.didJustFinish && resolve()))
+        await new Promise<void>((resolve) => {
+          sound.setOnPlaybackStatusUpdate((status) => {
+            if (status.isLoaded && status.didJustFinish) {
+              resolve()
+            }
+          })
+        })
       }
     } catch (error) {
       console.error('Error playing text:', error)
@@ -125,12 +131,12 @@ const pickerSelectStyles = StyleSheet.create({
   inputAndroid: {
     fontSize: 16,
     paddingHorizontal: 0,
-    paddingVertical: 8,
-    borderWidth: 0.5,
-    borderColor: 'purple',
-    borderRadius: 8,
+    // paddingVertical: 0,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
     color: 'black',
-    paddingRight: 30, // to ensure the text is never behind the icon
+    paddingRight: 150, // to ensure the text is never behind the icon
   },
   inputWeb: {
     fontSize: 16,
@@ -147,12 +153,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start', // Align items to the flex-start
     alignItems: 'flex-start', // Align items to the flex-start
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    alignItems: Platform.OS === 'android' ? 'center' : 'flex-start',
+    marginBottom: Platform.OS === 'android' ? 0 : 10,
     justifyContent: 'flex-start', // Align items to the left
   },
   playIcon: {

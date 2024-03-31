@@ -7,9 +7,10 @@ import type { Request, Response } from 'express'
 import express from 'express'
 import multer from 'multer'
 import OpenAI from 'openai'
+import { config } from './config/config.ts'
 
 const app = express()
-const hostname = '127.0.0.1'
+const hostname = config.hostname
 const port = 3000
 const fieldname = 'uploaded_audio'
 

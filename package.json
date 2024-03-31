@@ -27,6 +27,7 @@
     "base64-js": "^1.5.1",
     "buffer": "^6.0.3",
     "eas-cli": "^7.6.0",
+    "expo": "latest",
     "expo-av": "^13.10.5",
     "expo-constants": "^15.4.5",
     "expo-file-system": "^16.0.8",
