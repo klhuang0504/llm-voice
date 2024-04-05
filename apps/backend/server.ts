@@ -1,7 +1,6 @@
 import { exec } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import bodyParser from 'body-parser'
 import cors from 'cors'
 import type { Request, Response } from 'express'
 import express from 'express'
@@ -17,8 +16,8 @@ const fieldname = 'uploaded_audio'
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) // Replace with your OpenAI API key
 
 // Middleware to parse JSON bodies
-app.use(bodyParser.json())
-app.use(cors({ origin: `http://${hostname}:8081` })) // Adjust origin as needed
+app.use(express.json({ limit: '50mb' })) // Adjust the limit as needed
+app.use(cors()) // Adjust origin as needed
 
 // Multer configuration for disk storage
 const storage = multer.diskStorage({
@@ -26,40 +25,63 @@ const storage = multer.diskStorage({
     cb(null, __dirname) // Change the audio store folder to the current path
   },
   filename: (_req, file, cb) => {
-    cb(null, `${fieldname}.mp3`)
+    cb(null, `${fieldname}.m4a`)
   },
 })
-
 const upload = multer({ storage: storage })
-app.post('/upload', upload.single('audio'), async (_req: Request, res: Response) => {
-  const filePath = path.join(__dirname, `${fieldname}`)
 
-  if (_req.body.Platform === 'web') {
-    handleAudio(filePath, res)
-  } else {
+app.post('/speechToTextViaApi', upload.single('audio'), async (_req: Request, res: Response) => {
+  if (_req.body.Platform !== 'web') {
     const { audioData } = _req.body
     // Decode the Base64 audio data and write to a file
     const audioBuffer = Buffer.from(audioData, 'base64')
-    fs.writeFile(`${fieldname}.mp3`, audioBuffer, 'base64', (writeError: NodeJS.ErrnoException | null) => {
+    fs.writeFile(`${fieldname}.m4a`, audioBuffer, 'base64', (writeError: NodeJS.ErrnoException | null) => {
       if (writeError) {
         console.error('Error saving audio file:', writeError)
         return res.status(500).json({ error: 'Failed to save audio file' })
       }
       console.log('Audio file saved successfully')
-      handleAudio(filePath, res)
+    })
+  }
+  const transcription = await openai.audio.transcriptions.create({
+    file: fs.createReadStream(`${fieldname}.m4a`),
+    model: 'whisper-1',
+  })
+  fs.unlink(`${fieldname}.m4a`, (unlinkError) => {
+    if (unlinkError) console.error('Error deleting audio file:', unlinkError)
+  })
+  console.log('API transcription result:', transcription.text)
+  res.status(200).json({ transcription: transcription.text })
+})
+
+app.post('/upload', upload.single('audio'), async (_req: Request, res: Response) => {
+  const audioFilePath = path.join(__dirname, `${fieldname}.m4a`)
+  const textFilePath = path.join(__dirname, `${fieldname}.txt`)
+
+  if (_req.body.Platform === 'web') {
+    handleAudio(audioFilePath, textFilePath, res)
+  } else {
+    const { audioData } = _req.body
+    // Decode the Base64 audio data and write to a file
+    const audioBuffer = Buffer.from(audioData, 'base64')
+    fs.writeFile(`${fieldname}.m4a`, audioBuffer, 'base64', (writeError: NodeJS.ErrnoException | null) => {
+      if (writeError) {
+        console.error('Error saving audio file:', writeError)
+        return res.status(500).json({ error: 'Failed to save audio file' })
+      }
+      console.log('Audio file saved successfully')
+      handleAudio(audioFilePath, textFilePath, res)
     })
   }
 })
 
-const handleAudio = (filePath: string, res: Response) => {
-  const command = `whisper ${filePath}.mp3 --model small --output_format txt`
+const handleAudio = (audioFilePath: string, textFilePath: string, res: Response) => {
+  const command = `whisper ${audioFilePath} --model small --output_format txt`
   exec(command, (error, stdout, stderr) => {
     if (error) {
       console.error('Error executing whisper command:', stderr)
       return res.status(500).send(`Error processing audio: ${error.message}`)
     }
-    const audioFilePath = `${filePath}.mp3`
-    const textFilePath = `${filePath}.txt`
 
     // Read the transcription from the text file
     fs.readFile(textFilePath, 'utf8', (readError, data) => {
@@ -68,7 +90,7 @@ const handleAudio = (filePath: string, res: Response) => {
         return res.status(500).send(`Error retrieving transcription: ${readError.message}`)
       }
 
-      console.log('Transcription result:', data)
+      console.log('Local transcription result:', data)
 
       // Send the transcription in the response
       res.status(200).json({ transcription: data })
@@ -96,20 +118,26 @@ app.post('/convertToSpeech', async (_req: Request, res: Response) => {
     // Handle both single and multiple text entries
     const texts = Array.isArray(data) ? data : [data]
 
-    const mp3s = await Promise.all(
+    const mp3s = await await Promise.all(
       texts.map(async ({ text, voice }) => {
-        const mp3 = await openai.audio.speech.create({
-          model: 'tts-1',
-          voice,
-          input: text,
-        })
-        const buffer = Buffer.from(await mp3.arrayBuffer())
-        return buffer
+        try {
+          const mp3 = await openai.audio.speech.create({
+            model: 'tts-1',
+            voice,
+            input: text,
+          })
+          const buffer = Buffer.from(await mp3.arrayBuffer())
+          return buffer
+        } catch (error) {
+          console.error('Error during OpenAI API call:', error)
+          return null // Or handle the error as appropriate
+        }
       }),
     )
 
-    const combinedBuffer = Buffer.concat(mp3s)
-
+    // Filter out any null values before concatenating the buffers
+    const validMp3s = mp3s.filter((mp3) => mp3 !== null) as Buffer[]
+    const combinedBuffer = Buffer.concat(validMp3s)
     res.setHeader('Content-Type', 'audio/mpeg')
     res.send(combinedBuffer)
   } catch (error) {
