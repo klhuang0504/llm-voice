@@ -5,15 +5,10 @@ import whisper
 import tempfile
 import logging
 from flask_cors import CORS
-
 from io import BytesIO
-from fastapi import FastAPI, Request, Response
-from typing import List, Union
 from openai import OpenAI
-import io
 
 app = Flask(__name__)
-# app = FastAPI()
 
 CORS(app)
 
@@ -32,7 +27,7 @@ logging.basicConfig(
 
 @app.route("/upload", methods=["POST"])
 def upload_audio():
-    logging.info("Start")
+    logging.info("Start upload_audio()")
 
     # Handle the audio file based on the platform
     if request.form.get("Platform") == "web":
@@ -72,9 +67,7 @@ def handle_audio(audio_file):
         temp_file_path = temp_file.name
 
     # Load the audio file using Whisper
-    logging.info("Loading Whisper model")
     model = whisper.load_model("small")
-    logging.info("Transcribing audio")
     audio = whisper.load_audio(temp_file_path)
     result = model.transcribe(audio, fp16=False, language="English")
 
@@ -88,7 +81,7 @@ def handle_audio(audio_file):
 
 @app.route("/convertToSpeech", methods=["POST"])
 def convert_to_speech():
-    logging.info("Start")
+    logging.info("Start convert_to_speech()")
     try:
         # Get data from request body
         data = request.get_json()
@@ -102,7 +95,6 @@ def convert_to_speech():
 
         mp3_buffers = []
         for text_data in texts:
-            logging.info(text_data)
             text = text_data.get("data").get("text")
             voice = text_data.get("data").get("voice")
 
@@ -120,7 +112,6 @@ def convert_to_speech():
 
             except Exception as e:
                 print(f"Error during OpenAI API call: {e}")
-                logging.info("Internal server error")
                 return jsonify({"error": "Internal server error"}), 500
 
             mp3_buffers.append(mp3_buffer)

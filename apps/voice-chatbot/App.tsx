@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { NavigationContainer } from '@react-navigation/native'
 // import { createStackNavigator } from '@react-navigation/stack'
-import React from 'react'
+import * as React from 'react'
 import FormScreen from './FormScreen'
 import Recorder from './Recorder'
 
@@ -14,7 +14,7 @@ export default function App() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
-            const iconName = ''
+            // const iconName = ''
 
             if (route.name === 'Audio To Text') {
               return focused ? (

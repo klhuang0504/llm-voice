@@ -1,10 +1,11 @@
 import { Audio } from 'expo-av'
+import Checkbox from 'expo-checkbox'
 import * as FileSystem from 'expo-file-system'
 import { speak } from 'expo-speech' // Import the speak function from expo-speech
-import React, { useState, type FC } from 'react'
+import { FC, useState } from 'react' // Fixed import for React
+import * as React from 'react'
 import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { config } from './config/config.ts'
-
+import { config } from './config/config'
 type RecorderProps = Record<string, never>
 const hostname = config.hostname
 
@@ -12,7 +13,7 @@ const Recorder: FC<RecorderProps> = () => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [transcription, setTranscription] = useState<string>('')
-  // const transcriptionRef = useRef<Text>(null) // Create a ref for the Text component
+  const [useOpenAIAPI, setUseOpenAIAPI] = useState<boolean>(false) // New state for checkbox
 
   const startRecording = async (): Promise<void> => {
     try {
@@ -64,26 +65,27 @@ const Recorder: FC<RecorderProps> = () => {
   }
 
   const uploadAudio = async (uri: string): Promise<void> => {
+    console.log('=====uploadAudio() start=====')
     setLoading(true) // Set loading state to true while waiting for response
     try {
       let uploadResponse: Response
+      const targetUrl = `http://${hostname}:3000/${useOpenAIAPI ? 'speechToTextViaApi' : 'upload'}`
       if (Platform.OS === 'web') {
         const formData = new FormData()
-        console.log('=====uploadAudio() start=====')
         const response = await fetch(uri)
         const audioBlob = await response.blob()
         const filename = uri.split('/').pop()
         formData.append('audio', audioBlob, filename)
         formData.append('Platform', 'web')
         // Perform the upload
-        uploadResponse = await fetch(`http://${hostname}:3000/upload`, {
+        uploadResponse = await fetch(targetUrl, {
           method: 'POST',
           body: formData,
         })
       } else {
         const audioData = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
 
-        uploadResponse = await fetch(`http://${hostname}:3000/upload`, {
+        uploadResponse = await fetch(targetUrl, {
           method: 'POST',
           body: JSON.stringify({ audioData }),
           headers: {
@@ -112,6 +114,10 @@ const Recorder: FC<RecorderProps> = () => {
           <Text style={{ fontSize: 20 }}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
         </TouchableOpacity>
       )}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Checkbox value={useOpenAIAPI} onValueChange={setUseOpenAIAPI} />
+        <Text style={{ marginLeft: 5 }}>Use OpenAI API</Text>
+      </View>
       <Text style={transcription ? styles.transcriptionText : undefined}>
         {transcription || 'Say something first to get a transcription!'}
       </Text>
@@ -123,6 +129,7 @@ const styles = StyleSheet.create({
   transcriptionText: {
     color: 'green',
     fontWeight: 'bold',
+    marginTop: 5,
   },
 })
 
