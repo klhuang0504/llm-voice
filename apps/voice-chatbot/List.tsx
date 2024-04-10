@@ -28,7 +28,7 @@ const List = () => {
   const fetchData = async () => {
     setRefreshing(true)
     const { data, error } = await supabase
-      .from('test')
+      .from(tableName)
       .select()
       .eq('user_uid', user?.id)
       .order('id', { ascending: true })
