@@ -21,6 +21,10 @@ const List = () => {
   const swipeableRefs = React.useRef(new Map()).current
   const { user } = useUser()
 
+  React.useEffect(() => {
+    fetchData()
+  }, [])
+
   const fetchData = async () => {
     setRefreshing(true)
     const { data, error } = await supabase
@@ -168,10 +172,6 @@ const List = () => {
       </Swipeable>
     )
   }
-
-  React.useEffect(() => {
-    fetchData()
-  }, [fetchData]) // Now fetchData is a dependency
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
