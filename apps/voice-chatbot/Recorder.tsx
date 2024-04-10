@@ -5,15 +5,20 @@ import { speak } from 'expo-speech' // Import the speak function from expo-speec
 import { FC, useState } from 'react' // Fixed import for React
 import * as React from 'react'
 import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useUser } from './UserContext'
 import { config } from './config/config'
+import { supabase } from './lib/initSupabase'
+
 type RecorderProps = Record<string, never>
 const hostname = config.hostname
+const tableName = 'note'
 
 const Recorder: FC<RecorderProps> = () => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [transcription, setTranscription] = useState<string>('')
   const [useOpenAIAPI, setUseOpenAIAPI] = useState<boolean>(false) // New state for checkbox
+  const { user } = useUser()
 
   const startRecording = async (): Promise<void> => {
     try {
@@ -98,7 +103,13 @@ const Recorder: FC<RecorderProps> = () => {
 
       setTranscription(data.transcription)
       speak(data.transcription) // Replace with your transcribed text
-      // showTranscription(data.transcription)
+
+      if (user) {
+        // You can now use user.id to insert data into Supabase
+        await supabase.from(tableName).insert({ title: data.transcription, user_uid: user.id })
+      } else {
+        console.log('No user is logged in.')
+      }
     } catch (error) {
       console.error('Failed to upload audio', error)
     }
