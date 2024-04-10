@@ -1,6 +1,7 @@
 import { exec } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { createClient } from '@supabase/supabase-js'
 import cors from 'cors'
 import type { Request, Response } from 'express'
 import express from 'express'
@@ -8,11 +9,26 @@ import multer from 'multer'
 import OpenAI from 'openai'
 import { config } from './config/config.ts'
 
+// Create a single supabase client for interacting with your database
+const supabase = createClient(
+  process.env.REACT_NATIVE_SUPABASE_URL || '',
+  process.env.REACT_NATIVE_SUPABASE_ANON_KEY || '',
+)
+await supabase.auth.signInWithPassword({
+  email: '',
+  password: '',
+})
+
+// await supabase.from('test').insert({})
+// const { data, error } = await supabase.from('test').update({ name: 'Australia' }).eq('id', 1)
+// await supabase.from('test').delete().eq('id', 1)
+// const { data, error } = await supabase.from('test').select()
+
 const app = express()
 const hostname = config.hostname
 const port = 3000
 const fieldname = 'uploaded_audio'
-
+console.log(process.env.REACT_NATIVE_SUPABASE_URL)
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) // Replace with your OpenAI API key
 
 // Middleware to parse JSON bodies
