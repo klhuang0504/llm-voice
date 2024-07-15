@@ -1,7 +1,7 @@
 name: Actions test
 on: workflow_dispatch
 jobs: 
-  Echo-Hello
+  Echo-Hello:
     runs-on: ubuntu-latest
     steps:
       - run: echo "Hello!👋"
