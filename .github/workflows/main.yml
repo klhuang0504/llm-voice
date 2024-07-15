@@ -1,0 +1,7 @@
+name: Actions test
+on: workflow_dispatch
+jobs: 
+  Echo-Hello
+    runs-on: self-hosted
+    steps:
+      - run: echo "Hello!👋"
